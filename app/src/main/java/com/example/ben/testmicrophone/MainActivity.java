@@ -1,6 +1,5 @@
 package com.example.ben.testmicrophone;
 
-import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -9,48 +8,26 @@ import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 
-import ai.api.AIListener;
-import ai.api.RequestExtras;
-import ai.api.android.AIConfiguration;
-import ai.api.android.AIService;
-import ai.api.model.AIContext;
-import ai.api.model.AIError;
-import ai.api.model.AIResponse;
-import ai.api.model.Fulfillment;
-import ai.api.model.Metadata;
-import ai.api.model.Result;
-import ai.api.android.GsonFactory;
-import ai.api.model.Status;
-
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.speech.tts.TextToSpeech;
 
 import static android.speech.tts.TextToSpeech.QUEUE_ADD;
 
 
-public class MainActivity extends AppCompatActivity implements AIListener{
+public class MainActivity extends AppCompatActivity implements ApiAiShimListener {
 
-    private AIService aiService;
+    private ApiAiShim nlp;
     private TextView resultTextView;
     private final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 201;
 
-    private Gson gson = GsonFactory.getGson();
     private TextToSpeech tts;
 
     public static final String TAG = MainActivity.class.getName();
@@ -63,7 +40,8 @@ public class MainActivity extends AppCompatActivity implements AIListener{
 
         resultTextView = (TextView)findViewById(R.id.editTextView);
 
-        initService();
+        nlp = new ApiAiShim(this, this);
+
         initTextToSpeech();
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.RECORD_AUDIO)
@@ -128,105 +106,36 @@ public class MainActivity extends AppCompatActivity implements AIListener{
         }
     }
 
-    private void initService() {
-//        final AIConfiguration.SupportedLanguages lang = AIConfiguration.SupportedLanguages.fromLanguageTag(selectedLanguage.getLanguageCode());
-        final AIConfiguration config = new AIConfiguration("9e27dbcf8e22448c9fdb81829b4df019",
-                AIConfiguration.SupportedLanguages.English,
-                AIConfiguration.RecognitionEngine.System);
-
-        aiService = AIService.getService(this, config);
-        aiService.setListener(this);
-    }
-
   public void startRecognition(final View view){
-      aiService.startListening();
+      nlp.startRecognition();
   }
 
   public void stopRecognition(final View view){
-        aiService.stopListening();
+      nlp.stopRecognition();
     }
 
-
-
     @Override
-    public void onResult(final AIResponse response) {
+    public void ApiAiError(final String error) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "onResult");
-
-//                resultTextView.setText(gson.toJson(response));
-
-                Log.i(TAG, "Received success response");
-
-                /*
-                // this is example how to get different parts of result object
-                final Status status = response.getStatus();
-                Log.i(TAG, "Status code: " + status.getCode());
-                Log.i(TAG, "Status type: " + status.getErrorType());
-
-                final Result result = response.getResult();
-                Log.i(TAG, "Resolved query: " + result.getResolvedQuery());
-
-                Log.i(TAG, "Action: " + result.getAction());
-
-
-
-                final Metadata metadata = result.getMetadata();
-                if (metadata != null) {
-                    Log.i(TAG, "Intent id: " + metadata.getIntentId());
-                    Log.i(TAG, "Intent name: " + metadata.getIntentName());
-                }
-                */
-
-                final Result result = response.getResult();
-                final Fulfillment fulfillment = result.getFulfillment();
-                final String speech = fulfillment.getSpeech();
-                Log.i(TAG, "Speech!!!!!!! " + speech);
-                resultTextView.setText(speech);
-                tts.speak(speech, QUEUE_ADD, null, "7");
-
-                final HashMap<String, JsonElement> params = result.getParameters();
-                if (params != null && !params.isEmpty()) {
-                    Log.i(TAG, "Parameters: ");
-                    for (final Map.Entry<String, JsonElement> entry : params.entrySet()) {
-                        Log.i(TAG, String.format("%s: %s", entry.getKey(), entry.getValue().toString()));
-                    }
-                }
-            }
-
-        });
-    }
-
-    @Override
-    public void onListeningStarted() {
-
-    }
-
-    @Override
-    public void onListeningFinished() {
-
-    }
-
-    @Override
-    public void onListeningCanceled() {
-
-    }
-
-    @Override
-    public void onError(final AIError error) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                resultTextView.setText(error.toString());
+                resultTextView.setText(error);
             }
         });
     }
 
     @Override
-    public void onAudioLevel(float level) {
+    public void ApiAiResult(String speech, String intent, HashMap<String, JsonElement> params) {
+
+        resultTextView.setText(speech);
+        tts.speak(speech, QUEUE_ADD, null, "7");
+
+        if (params != null && !params.isEmpty()) {
+            Log.i(TAG, "Parameters: ");
+            for (final Map.Entry<String, JsonElement> entry : params.entrySet()) {
+                Log.i(TAG, String.format("%s: %s", entry.getKey(), entry.getValue().toString()));
+            }
+        }
 
     }
-
-
 }
