@@ -16,6 +16,7 @@ import ai.api.android.AIService;
 import ai.api.model.AIContext;
 import ai.api.model.AIError;
 import ai.api.model.AIResponse;
+import ai.api.model.Fulfillment;
 import ai.api.model.Metadata;
 import ai.api.model.Result;
 import ai.api.android.GsonFactory;
@@ -27,6 +28,7 @@ import com.google.gson.JsonElement;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import android.text.TextUtils;
@@ -37,6 +39,9 @@ import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.speech.tts.TextToSpeech;
+
+import static android.speech.tts.TextToSpeech.QUEUE_ADD;
 
 
 public class MainActivity extends AppCompatActivity implements AIListener{
@@ -46,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements AIListener{
     private final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 201;
 
     private Gson gson = GsonFactory.getGson();
+    private TextToSpeech tts;
 
     public static final String TAG = MainActivity.class.getName();
 
@@ -58,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements AIListener{
         resultTextView = (TextView)findViewById(R.id.editTextView);
 
         initService();
+        initTextToSpeech();
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -83,6 +90,17 @@ public class MainActivity extends AppCompatActivity implements AIListener{
                 // result of the request.
             }
         }
+    }
+
+    private void initTextToSpeech() {
+        tts = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status != TextToSpeech.ERROR) {
+                    tts.setLanguage(Locale.US);
+                }
+            }
+        });
     }
 
     @Override
@@ -137,10 +155,11 @@ public class MainActivity extends AppCompatActivity implements AIListener{
             public void run() {
                 Log.d(TAG, "onResult");
 
-                resultTextView.setText(gson.toJson(response));
+//                resultTextView.setText(gson.toJson(response));
 
                 Log.i(TAG, "Received success response");
 
+                /*
                 // this is example how to get different parts of result object
                 final Status status = response.getStatus();
                 Log.i(TAG, "Status code: " + status.getCode());
@@ -158,6 +177,14 @@ public class MainActivity extends AppCompatActivity implements AIListener{
                     Log.i(TAG, "Intent id: " + metadata.getIntentId());
                     Log.i(TAG, "Intent name: " + metadata.getIntentName());
                 }
+                */
+
+                final Result result = response.getResult();
+                final Fulfillment fulfillment = result.getFulfillment();
+                final String speech = fulfillment.getSpeech();
+                Log.i(TAG, "Speech!!!!!!! " + speech);
+                resultTextView.setText(speech);
+                tts.speak(speech, QUEUE_ADD, null, "7");
 
                 final HashMap<String, JsonElement> params = result.getParameters();
                 if (params != null && !params.isEmpty()) {
