@@ -19,12 +19,12 @@ public class ApiAiShim implements AIListener {
     private AIService aiService;
     private ApiAiShimListener shimListener;
 
-    public ApiAiShim(Context context, ApiAiShimListener listener) {
+    public ApiAiShim(Context context, String clientToken, ApiAiShimListener listener) {
 
         shimListener = listener;
 
 //        final AIConfiguration.SupportedLanguages lang = AIConfiguration.SupportedLanguages.fromLanguageTag(selectedLanguage.getLanguageCode());
-        final AIConfiguration config = new AIConfiguration("9e27dbcf8e22448c9fdb81829b4df019",
+        final AIConfiguration config = new AIConfiguration(clientToken, //"9e27dbcf8e22448c9fdb81829b4df019",
                 AIConfiguration.SupportedLanguages.English,
                 AIConfiguration.RecognitionEngine.System);
 
