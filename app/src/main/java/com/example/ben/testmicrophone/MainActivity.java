@@ -21,6 +21,7 @@ public class MainActivity extends AppCompatActivity implements ApiAiShimListener
     private StringSpeaker voice;
     private PermissionRequester permRequester;
     private static final String clientToken = "40e5fdf2196740ea9d6f22ae2990f29f";
+    private SearchAndPlay searchAndPlay = new SearchAndPlay(this);
 
     private TextView resultTextView;
 
@@ -66,6 +67,8 @@ public class MainActivity extends AppCompatActivity implements ApiAiShimListener
         resultTextView.setText(speech);
         voice.pronounce(speech);
 
+
+        // Just for debugging.
         if (params != null && !params.isEmpty()) {
             Log.i(TAG, "Parameters: ");
             for (final Map.Entry<String, JsonElement> entry : params.entrySet()) {
@@ -73,5 +76,8 @@ public class MainActivity extends AppCompatActivity implements ApiAiShimListener
             }
         }
 
+        IntentHandler handler = IntentHandlerFactory.createHandler(intent, params);
+        if(handler != null)
+            handler.handle(params);
     }
 }
